@@ -2,6 +2,18 @@
 
 🇬🇧 **[English version](README.md)**
 
+> **Ceci est un fork personnel** de [Wuki60/MrCuisineVibeConnect](https://github.com/Wuki60/MrCuisineVibeConnect),
+> avec mes propres améliorations de design et de fonctionnalités : thème bleu nuit et accueil
+> repensé, mise en veille avec veilleuse sur la molette, recettes récentes et fréquentes, notes et
+> quantités personnelles, sons de pesée et de fin de recette, heure réglée dès l'allumage,
+> certificats Android 6 pour les mises à jour… Ses versions sont numérotées `x.y.z-pierok13`, et
+> Réglages › Mises à jour les installe depuis [ce fork](https://github.com/pierok13/MrCuisineVibeConnect/releases).
+> Les améliorations sont aussi proposées au projet d'origine sous forme de pull requests.
+>
+> **Un grand merci à [Wuki60](https://github.com/Wuki60)**, qui a créé Toque : l'interface, le
+> pilotage du moteur et ses règles de sécurité, la synchronisation des recettes et toute la
+> procédure d'installation sont son travail.
+
 **Toque**, une interface moderne et rapide pour le robot **Monsieur Cuisine Connect** (SKMC 1200),
 qui remplace l'appli d'origine sur la tablette du robot tout en gardant **les recettes Lidl**.
 
@@ -177,6 +189,7 @@ synchronisation des recettes, retour à l'appli d'origine.
 
 ## Crédits
 
+- Toque : créé par [Wuki60](https://github.com/Wuki60) ([dépôt d'origine](https://github.com/Wuki60/MrCuisineVibeConnect)) ; ce fork y ajoute des améliorations personnelles de design et de fonctionnalités.
 - Protocole : [Monsieur Cuisine Developer SDK](https://github.com/antrea/monsieur-cuisine-developer-sdk) (MIT).
 - Accès au robot : [Monsieur-Cuisine-Connect-Hack](https://github.com/EliasKotlyar/Monsieur-Cuisine-Connect-Hack).
 
