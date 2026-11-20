@@ -24,6 +24,7 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
     class Result(val ok: Boolean, val zone: String, val message: String)
 
     fun run(): Result {
+        keepRootAllowed()
         if (!plausible() && RootShell.available()) fixClock(networkTime())
         val wanted = prefs.timeZone
         var zone: String? = null
@@ -70,6 +71,22 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
         val now = clock()
         return if (ok) Result(true, z, if (fixed) tr("Heure corrigée : %s (%s)", now, z) else tr("Il est %s (%s)", now, z))
         else Result(false, current(), tr("Le système a refusé le fuseau %s", z))
+    }
+
+    /**
+     * Garde Toque autorisé « pour toujours » dans Magisk. Un accès accordé pour un temps limité
+     * (ou réinitialisé par une mise à jour) se traduisait par une demande à chaque démarrage, puis
+     * par un refus si personne ne répondait dans les 10 s. Sans effet si le root est déjà refusé.
+     */
+    private fun keepRootAllowed() {
+        if (rootPolicyDone) return
+        val uid = android.os.Process.myUid()
+        val r = RootShell.run("magisk --sqlite \"SELECT policy,until FROM policies WHERE uid=$uid\"", 8_000)
+        if (!r.ok) return
+        rootPolicyDone = true
+        if (r.out.contains("policy=2") && r.out.contains("until=0")) return
+        RootShell.run("magisk --sqlite \"REPLACE INTO policies (uid,policy,until,logging,notification) VALUES($uid,2,0,0,0)\"", 8_000)
+        log.write("root", "Toque autorisé pour toujours dans Magisk (était : ${r.out.trim().ifEmpty { "aucune règle" }})")
     }
 
     /** Corrige l'horloge si elle s'écarte de plus de 2 min de l'heure donnée par un serveur. */
@@ -124,6 +141,7 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
         fun clock(): String = SimpleDateFormat("HH:mm", Locale.FRANCE).apply { timeZone = TimeZone.getDefault() }.format(Date())
 
         @Volatile private var started = false
+        @Volatile private var rootPolicyDone = false
 
         /**
          * Au lancement de l'interface : réglage dès que le réseau répond (le Wi-Fi met un moment à

@@ -128,7 +128,10 @@ class Updater(private val context: Context) {
         log.write("maj", "installation (root) de ${apk.name}")
         // Lancée en arrière-plan : Android arrête Toque pendant l'installation, puis `am start` le relance.
         val launch = "am start -n ${context.packageName}/${MainActivity::class.java.name}"
-        RootShell.run("(pm install -r $tmp > $out 2>&1; sleep 1; $launch > /dev/null 2>&1; rm -f $tmp) < /dev/null > /dev/null 2>&1 &", 10_000)
+        // Après l'installation, Toque est de nouveau autorisé dans Magisk, sans limite de temps
+        // (sans quoi Magisk peut redemander l'accès root au prochain démarrage).
+        val allow = "magisk --sqlite \"REPLACE INTO policies (uid,policy,until,logging,notification) VALUES(${android.os.Process.myUid()},2,0,0,0)\""
+        RootShell.run("(pm install -r $tmp > $out 2>&1; $allow > /dev/null 2>&1; sleep 1; $launch > /dev/null 2>&1; rm -f $tmp) < /dev/null > /dev/null 2>&1 &", 10_000)
         val deadline = System.currentTimeMillis() + 180_000
         while (System.currentTimeMillis() < deadline) {
             try { Thread.sleep(2_000) } catch (_: InterruptedException) { return }
