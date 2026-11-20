@@ -4,6 +4,7 @@ import android.content.Context
 import app.toque.core.i18n.tr
 import app.toque.core.machine.RootShell
 import app.toque.core.time.ZoneLookup
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -92,7 +93,20 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
         // Magisk (vu avec Magisk v31), et plus aucun accès root ne marche jusqu'au redémarrage.
         val uid = android.os.Process.myUid()
         val r = RootShell.run("magisk --sqlite \"REPLACE INTO policies (uid,policy,until,logging,notification) VALUES($uid,2,0,0,0)\"", 8_000)
-        if (r.ok) rootPolicyDone = true
+        if (!r.ok) return
+        rootPolicyDone = true
+        // Magisk v31 (Android 6) efface les règles des applis à chaque démarrage : un script de
+        // démarrage (service.d) remet celle de Toque, installé ici s'il manque ou a changé.
+        try {
+            val script = File(context.cacheDir, "toque-root.sh")
+            context.assets.open("robot/toque-root.sh").use { input -> script.outputStream().use { input.copyTo(it) } }
+            val dest = "/data/adb/service.d/toque-root.sh"
+            val w = RootShell.run("cmp -s '${script.absolutePath}' $dest || { mkdir -p /data/adb/service.d && cp '${script.absolutePath}' $dest && chmod 755 $dest && echo installed; }", 8_000)
+            if (w.out.contains("installed")) log.write("root", "règle de démarrage Magisk installée ($dest)")
+            script.delete()
+        } catch (e: Exception) {
+            log.write("root", "règle de démarrage Magisk : ${e.message}")
+        }
     }
 
     /**

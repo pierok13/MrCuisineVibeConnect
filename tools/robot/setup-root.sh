@@ -8,6 +8,13 @@ U=$(stat -c %u /data/data/app.toque 2>/dev/null)
 if magisk --sqlite "REPLACE INTO policies (uid,policy,until,logging,notification) VALUES($U,2,0,0,0)"; then
   echo "Toque allowed in Magisk"
 fi
+# 1b. Magisk v31 on Android 6 drops app root rules at every boot, then asks again and denies after
+#     10 s: a boot script (service.d) puts Toque's rule back during the first 3 minutes.
+D=$(dirname "$0")
+if [ -f "$D/toque-root.sh" ]; then
+  mkdir -p /data/adb/service.d
+  cp "$D/toque-root.sh" /data/adb/service.d/toque-root.sh && chmod 755 /data/adb/service.d/toque-root.sh && echo "Toque boot rule installed"
+fi
 if [ ! -x /data/adb/magisk/busybox ]; then
   for b in /data/app/com.topjohnwu.magisk*/lib/arm*/libbusybox.so; do
     [ -f "$b" ] || continue

@@ -18,6 +18,7 @@ Write-Host "Installing Toque..."
 & $adb install -r $Apk | Out-Host
 & $adb push tools\robot\restore.sh /data/local/tmp/toque-restore.sh | Out-Null
 & $adb push tools\robot\setup-root.sh /data/local/tmp/toque-setup-root.sh | Out-Null
+& $adb push tools\robot\toque-root.sh /data/local/tmp/toque-root.sh | Out-Null
 & $adb shell "su -c 'sh /data/local/tmp/toque-setup-root.sh'" | Out-Host
 & $adb shell am start -n app.toque/.ui.MainActivity | Out-Null
 Write-Host ""
