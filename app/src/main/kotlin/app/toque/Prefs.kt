@@ -224,4 +224,11 @@ class Prefs(context: Context) {
         set(v) {
             p.edit().putString("weighSound", v).commit()
         }
+
+    /** Dernière heure plausible connue (ms), remise au démarrage en attendant le réseau. */
+    var lastClockMs: Long
+        get() = p.getLong("lastClockMs", 0)
+        set(v) {
+            p.edit().putLong("lastClockMs", v).commit()
+        }
 }

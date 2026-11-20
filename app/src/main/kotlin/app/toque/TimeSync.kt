@@ -25,7 +25,15 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
 
     fun run(): Result {
         keepRootAllowed()
-        if (!plausible() && RootShell.available()) fixClock(networkTime())
+        if ((!plausible() || approximate) && RootShell.available()) {
+            restoreLastKnown()
+            val net = networkTime()
+            if (net > 0) {
+                fixClock(net)
+                if (approximate) log.write("heure", "heure confirmée par le réseau")
+                approximate = false
+            }
+        }
         val wanted = prefs.timeZone
         var zone: String? = null
         var source = tr("choix manuel")
@@ -80,13 +88,31 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
      */
     private fun keepRootAllowed() {
         if (rootPolicyDone) return
+        // Écriture seule : une lecture `magisk --sqlite "SELECT …"` peut faire tomber le démon de
+        // Magisk (vu avec Magisk v31), et plus aucun accès root ne marche jusqu'au redémarrage.
         val uid = android.os.Process.myUid()
-        val r = RootShell.run("magisk --sqlite \"SELECT policy,until FROM policies WHERE uid=$uid\"", 8_000)
-        if (!r.ok) return
-        rootPolicyDone = true
-        if (r.out.contains("policy=2") && r.out.contains("until=0")) return
-        RootShell.run("magisk --sqlite \"REPLACE INTO policies (uid,policy,until,logging,notification) VALUES($uid,2,0,0,0)\"", 8_000)
-        log.write("root", "Toque autorisé pour toujours dans Magisk (était : ${r.out.trim().ifEmpty { "aucune règle" }})")
+        val r = RootShell.run("magisk --sqlite \"REPLACE INTO policies (uid,policy,until,logging,notification) VALUES($uid,2,0,0,0)\"", 8_000)
+        if (r.ok) rootPolicyDone = true
+    }
+
+    /**
+     * Sans pile d'horloge, le robot redémarre en 2010. Tant que le réseau ne répond pas, on remet la
+     * dernière heure connue (notée toutes les 5 min) : en retard de la durée d'extinction, mais
+     * plus proche que 2010, et corrigée dès que le réseau répond ([approximate]).
+     */
+    private fun restoreLastKnown() {
+        if (plausible()) return
+        val last = prefs.lastClockMs
+        if (last < MIN_PLAUSIBLE_MS) return
+        RootShell.run("service call alarm 2 i64 $last")
+        if (!plausible()) {
+            val utc = SimpleDateFormat("MMddHHmmyyyy.ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+            RootShell.run("date -u ${utc.format(Date(last))}")
+        }
+        if (plausible()) {
+            approximate = true
+            log.write("heure", "dernière heure connue remise en attendant le réseau")
+        }
     }
 
     /** Corrige l'horloge si elle s'écarte de plus de 2 min de l'heure donnée par un serveur. */
@@ -142,6 +168,8 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
 
         @Volatile private var started = false
         @Volatile private var rootPolicyDone = false
+        /** Horloge remise d'après la dernière heure connue, pas encore confirmée par le réseau. */
+        @Volatile private var approximate = false
 
         /**
          * Au lancement de l'interface : réglage dès que le réseau répond (le Wi-Fi met un moment à
@@ -174,6 +202,20 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
             t.isDaemon = true
             t.name = "toque-heure"
             t.start()
+            // Dernière heure connue, notée toutes les 5 minutes (reprise au prochain démarrage).
+            val saver = Thread {
+                while (true) {
+                    if (plausible()) prefs.lastClockMs = System.currentTimeMillis()
+                    try {
+                        Thread.sleep(300_000)
+                    } catch (_: InterruptedException) {
+                        return@Thread
+                    }
+                }
+            }
+            saver.isDaemon = true
+            saver.name = "toque-heure-note"
+            saver.start()
         }
     }
 }
