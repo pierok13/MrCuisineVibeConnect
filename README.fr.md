@@ -59,6 +59,10 @@ Comptez 1 à 2 heures. Sans agent : [docs/INSTALLATION.fr.md](docs/INSTALLATION.
   fiche charge les commentaires des utilisateurs (avec les réponses de Monsieur Cuisine).
 - **Recherche qui marche** : insensible aux accents, aux pluriels et aux fautes de frappe
   (« bechamle », « risoto »). Recherche par ingrédients (« poulet, curry »), filtres, favoris.
+- **Sans gluten et sans lactose** : deux filtres dans la liste des recettes, cumulables et
+  mémorisés. Ils lisent les étiquettes du site et les ingrédients (farine de blé, pâtes, beurre,
+  fromage… mais pas la farine de riz, le lait de coco ni les produits « sans gluten »). C'est une
+  aide au tri, pas une garantie : bouillons, épices et traces ne figurent pas dans les ingrédients.
 - **Cuisine pas à pas** : chaque étape se lance d'un appui, l'étape suivante s'affiche toute
   seule, pesée intégrée, reprise après coupure. Les réglages qui se suivent sans geste à faire
   entre eux (rinçage, mixages en plusieurs vitesses…) partent ensemble d'un seul appui : la lame

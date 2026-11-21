@@ -14,6 +14,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import app.toque.core.i18n.I18n
 import app.toque.core.i18n.tr
+import app.toque.core.recipes.Diet
+import app.toque.core.recipes.DietCheck
 import app.toque.core.recipes.McOnline
 import app.toque.core.recipes.QuantityLinks
 import app.toque.core.recipes.Ingredient
@@ -69,6 +71,20 @@ class RecipeScreen(a: MainActivity, private val recipe: Recipe) : Screen(a) {
         if (recipe.servings > 0) meta.addView(Ui.chip(c, tr("%d pers.", recipe.servings), Icon.Kind.POT), Ui.lp(Ui.WRAP, Ui.WRAP, r = 8))
         meta.addView(Ui.chip(c, when (recipe.difficulty) { 1 -> tr("Facile"); 2 -> tr("Moyen"); else -> tr("Difficile") }, Icon.Kind.STAR))
         left.addView(meta, Ui.lp(t = 12))
+
+        // Régimes choisis dans la liste : la recette convient, ou ce qui l'en écarte.
+        val dietRow = Ui.horizontal(c)
+        val warnings = ArrayList<String>()
+        for (d in a.prefs.diets) {
+            val bad = DietCheck.offending(recipe, d)
+            if (bad.isEmpty()) dietRow.addView(Ui.chip(c, d.label, Icon.Kind.CHECK, Ui.TEXT, size = 15f), Ui.lp(Ui.WRAP, Ui.WRAP, r = 8))
+            else {
+                val names = bad.joinToString(", ") { it.name.trim() }
+                warnings += if (d == Diet.GLUTEN_FREE) tr("Gluten possible : %s", names) else tr("Lactose possible : %s", names)
+            }
+        }
+        if (dietRow.childCount > 0) left.addView(dietRow, Ui.lp(t = 8))
+        for (w in warnings) left.addView(Ui.ellipsize(Ui.text(c, w, 16f, Ui.WARN), 2), Ui.lp(t = 6))
 
         // Auteur et note du site.
         val byline = ArrayList<String>()

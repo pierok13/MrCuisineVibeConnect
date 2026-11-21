@@ -72,6 +72,8 @@ data class RecipeFilter(
     val favoritesOnly: Boolean = false,
     val source: RecipeSource? = null,
     val maxMinutes: Int = 0,
+    /** Régimes exigés (tous à la fois). */
+    val diets: Set<Diet> = emptySet(),
 )
 
 /**
@@ -94,6 +96,7 @@ class SearchIndex(recipes: List<Recipe>) {
         val normTitle: String,
         val rating: Double = 0.0,
         val ratingCount: Int = 0,
+        val diets: Set<Diet> = emptySet(),
     )
 
     data class Hit(val entry: Entry, val score: Double, val matched: Int)
@@ -114,7 +117,7 @@ class SearchIndex(recipes: List<Recipe>) {
         val list = ArrayList<Entry>(recipes.size)
         for ((index, r) in recipes.withIndex()) {
             list += Entry(r.id, r.title, r.category, r.tags, r.favorite, r.source, r.totalMinutes, r.image,
-                r.machineSteps, TextNorm.normalize(r.title), r.rating, r.ratingCount)
+                r.machineSteps, TextNorm.normalize(r.title), r.rating, r.ratingCount, DietCheck.dietsOf(r))
             fun add(text: String, w: Int) {
                 for (t in TextNorm.tokens(text)) {
                     val p = postings.getOrPut(t) { HashMap(4) }
@@ -171,6 +174,7 @@ class SearchIndex(recipes: List<Recipe>) {
         if (f.favoritesOnly && !e.favorite) return false
         if (f.source != null && e.source != f.source) return false
         if (f.maxMinutes > 0 && (e.totalMinutes <= 0 || e.totalMinutes > f.maxMinutes)) return false
+        if (!e.diets.containsAll(f.diets)) return false
         return true
     }
 

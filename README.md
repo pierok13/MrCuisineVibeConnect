@@ -59,6 +59,10 @@ Allow 1 to 2 hours. Without an agent: [docs/INSTALLATION.md](docs/INSTALLATION.m
   and the recipe page loads the users' comments (with Monsieur Cuisine's replies).
 - **Search that works**: ignores accents, plurals and typos ("bechamle", "risoto").
   Search by ingredients (e.g. "chicken, curry"), filters, favorites.
+- **Gluten-free and lactose-free**: two filters in the recipe list, which can be combined and are
+  remembered. They use the site's labels and read the ingredients (wheat flour, pasta, butter,
+  cheese… but not rice flour, coconut milk or "gluten-free" products). This is a sorting aid, not
+  a guarantee: stock cubes, spices and traces are not in the ingredient lists.
 - **Guided cooking**: each step starts with one tap, the next step shows up by itself, built-in
   weighing, resume after a power cut. Settings that follow each other with nothing to do in
   between (rinsing, blending at several speeds…) start together with a single tap: the blade goes

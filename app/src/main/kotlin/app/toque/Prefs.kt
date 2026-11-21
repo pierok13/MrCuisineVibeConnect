@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import app.toque.core.i18n.I18n
 import app.toque.core.i18n.tr
 import app.toque.core.i18n.trKey
+import app.toque.core.recipes.Diet
 
 /**
  * Réglages persistants, lisibles par les deux processus (interface et machine).
@@ -61,6 +62,13 @@ class Prefs(context: Context) {
         get() = p.getString("vendorPackage", "de.silpion.mc2") ?: "de.silpion.mc2"
         set(v) {
             p.edit().putString("vendorPackage", v).commit()
+        }
+
+    /** Régimes retenus dans la liste de recettes (« sans gluten », « sans lactose »), gardés d'une fois sur l'autre. */
+    var diets: Set<Diet>
+        get() = (p.getString("diets", "") ?: "").split(',').mapNotNullTo(LinkedHashSet()) { Diet.of(it) }
+        set(v) {
+            p.edit().putString("diets", v.joinToString(",") { it.key }).commit()
         }
 
     var requireBowl: Boolean

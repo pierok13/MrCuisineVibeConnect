@@ -22,6 +22,7 @@ import android.widget.TextView
 import app.toque.Prefs
 import app.toque.core.i18n.I18n
 import app.toque.core.i18n.tr
+import app.toque.core.recipes.Diet
 import app.toque.core.recipes.RecipeFilter
 import app.toque.core.recipes.SearchIndex
 import app.toque.ui.Icon
@@ -51,13 +52,14 @@ class RecipesScreen(
         else -> tr("Recettes")
     }
 
-    private var filter = RecipeFilter(favoritesOnly = favorites)
+    private var filter = RecipeFilter(favoritesOnly = favorites, diets = a.prefs.diets)
     private var usage = initialUsage
     private var query = ""
     private var results: List<SearchIndex.Hit> = emptyList()
     private var generation = 0
     private lateinit var input: EditText
     private lateinit var chips: LinearLayout
+    private lateinit var dietNote: TextView
     private lateinit var grid: GridView
     private lateinit var count: TextView
     private lateinit var empty: LinearLayout
@@ -109,6 +111,8 @@ class RecipesScreen(
         chips = Ui.horizontal(c)
         scroller.addView(chips)
         root.addView(scroller, Ui.lp(t = 12, b = 12))
+        dietNote = Ui.text(c, tr("Tri d'après les ingrédients : vérifiez les étiquettes (bouillons, épices, traces)."), 15f, Ui.TEXT2)
+        root.addView(dietNote, Ui.lp(b = 10))
 
         val body = FrameLayout(c)
         grid = GridView(c).apply {
@@ -149,7 +153,18 @@ class RecipesScreen(
         fun chip(label: String, selected: Boolean, f: RecipeFilter, u: Usage = Usage.NONE) {
             chips.addView(Ui.toggleChip(c, label, selected) { filter = f; usage = u; buildChips(); search() }, Ui.lp(Ui.WRAP, Ui.WRAP, r = 10))
         }
-        val base = RecipeFilter()
+        // Les régimes se combinent avec les autres filtres et restent choisis d'une fois sur l'autre.
+        for (d in Diet.values()) {
+            val on = d in filter.diets
+            chips.addView(Ui.toggleChip(c, d.label, on) {
+                filter = filter.copy(diets = if (on) filter.diets - d else filter.diets + d)
+                a.prefs.diets = filter.diets
+                buildChips(); search()
+            }, Ui.lp(Ui.WRAP, Ui.WRAP, r = 10))
+        }
+        chips.addView(View(c).apply { setBackgroundColor(Ui.STROKE) }, LinearLayout.LayoutParams(Ui.u(1), Ui.u(30)).apply { rightMargin = Ui.u(10) })
+        dietNote.visibility = if (filter.diets.isEmpty()) View.GONE else View.VISIBLE
+        val base = RecipeFilter(diets = filter.diets)
         val plain = usage == Usage.NONE
         chip(tr("Toutes"), plain && filter == base, base)
         chip(tr("Récentes"), usage == Usage.RECENT, base, Usage.RECENT)
@@ -173,7 +188,8 @@ class RecipesScreen(
                 val ids = if (u == Usage.RECENT) repo.recentIds() else repo.mostCookedIds()
                 val byId = index.entries.associateBy { it.id }
                 val keep = if (q.isBlank()) null else found.mapTo(HashSet()) { it.entry.id }
-                ids.filter { keep == null || it in keep }.mapNotNull { id -> byId[id]?.let { SearchIndex.Hit(it, 0.0, 0) } }
+                ids.filter { keep == null || it in keep }.mapNotNull { id -> byId[id] }
+                    .filter { it.diets.containsAll(f.diets) }.map { SearchIndex.Hit(it, 0.0, 0) }
             }
             view.post {
                 if (gen != generation) return@post
